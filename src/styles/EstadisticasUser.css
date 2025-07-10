@@ -1,0 +1,132 @@
+.estadisticas-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 40px 20px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.filtros select,
+.filtros button {
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-family: 'Poppins', sans-serif;
+}
+
+.filtros button {
+  background-color: #6A00FF;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.filtros button:hover {
+  background-color: #5800cc;
+}
+
+.tabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 2px solid #eee;
+  margin-top: 30px;
+  margin-bottom: 20px;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  font-weight: 500;
+  color: #555;
+  transition: border-color 0.3s, color 0.3s;
+}
+
+.tab-button.active {
+  color: #6A00FF;
+  border-color: #6A00FF;
+}
+
+.tab-content {
+  display: none;
+  width: 100%;
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+.tab-content.show {
+  display: block;
+}
+
+.grafico-box {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  min-height: 300px;
+}
+
+.grafico-box canvas {
+  width: 100% !important;
+  max-width: 100%;
+}
+
+.grafico-box .logo-eirybot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: auto;
+  opacity: 0.4;
+}
+
+.referencias ul {
+  list-style: none;
+  padding-left: 0;
+  font-size: 14px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.referencias li {
+  padding: 4px 0;
+  border-bottom: 1px solid #eee;
+}
+
+@media (max-width: 600px) {
+  .filtros {
+    flex-direction: column;
+  }
+  .filtros select,
+  .filtros button {
+    width: 100%;
+  }
+  .tabs {
+    flex-direction: column;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
