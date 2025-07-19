@@ -4,11 +4,13 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import "../styles/EstadisticasUser.css";
 import Header from "../components/Header";
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+Chart.register(ChartDataLabels);
 
 export default function EstadisticasUser() {
-  const [metadata, setMetadata] = useState({ vendedores: [], referencias: [] });
+  const [metadata, setMetadata] = useState({ vendedores: [] });
   const [data, setData] = useState(null);
-  const [filtros, setFiltros] = useState({ rango: "todos", vendedor: "", referencia: "" });
+  const [filtros, setFiltros] = useState({ rango: "todos", vendedor: "" });
   const [tab, setTab] = useState("zona");
 
   const zonaChartRef = useRef(null);
@@ -35,19 +37,19 @@ export default function EstadisticasUser() {
     if (mensualChartRef.current) mensualChartRef.current.destroy();
 
     const ctxZona = document.getElementById("zonaChart")?.getContext("2d");
-    if (ctxZona) {
+    if (ctxZona && data.porMes) {
       zonaChartRef.current = new Chart(ctxZona, {
         type: "pie",
         data: {
-          labels: Object.keys(data.porZona),
+          labels: Object.keys(data.porMes),
           datasets: [{
-            data: Object.values(data.porZona),
-            backgroundColor: ["#6A00FF", "#9C27B0", "#03A9F4", "#FF9800"]
+            data: Object.values(data.porMes),
+            backgroundColor: ["#ffb74d", "#F06292", "#7986CB", "#4DB6AC","#A1887F","#C8E6C9"]
           }]
         },
         options: {
           plugins: {
-            title: { display: true, text: "Por Zona" },
+            title: { display: true, text: "Totalidad de registros del rango seleccionado" },
             legend: { position: "bottom" }
           }
         }
@@ -78,23 +80,65 @@ export default function EstadisticasUser() {
 
     const ctxMensual = document.getElementById("mensualChart")?.getContext("2d");
     if (ctxMensual && data.porMes) {
+      const labels = Object.keys(data.porMes).map((mes) => {
+        const [anio, mesNum] = mes.split("-");
+        const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+        return `${meses[parseInt(mesNum, 10) - 1]} ${anio}`;
+      });
+
+      const valores = Object.values(data.porMes);
+
       mensualChartRef.current = new Chart(ctxMensual, {
-        type: "bar",
+        type: "line",
         data: {
-          labels: Object.keys(data.porMes),
+          labels,
           datasets: [{
             label: "Consultas por Mes",
-            data: Object.values(data.porMes),
-            backgroundColor: "#6A00FF"
+            data: valores,
+            fill: false,
+            borderColor: "#6A00FF",
+            tension: 0.3,
+            pointBackgroundColor: "#6A00FF",
+            pointRadius: 5
           }]
         },
         options: {
           plugins: {
-            title: { display: true, text: "Consultas por Mes" },
-            legend: { display: false }
+            title: {
+              display: true,
+              text: "Tendencia Mensual de Consultas"
+            },
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => `Consultas: ${ctx.raw}`
+              }
+            },
+            datalabels: {
+              anchor: 'end',
+              align: 'top',
+              color: '#6A00FF',
+              font: { weight: 'bold' },
+              formatter: (value) => value
+            }
           },
-          scales: { y: { beginAtZero: true } }
-        }
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Consultas"
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: "Mes"
+              }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
       });
     }
   }, [data]);
@@ -118,7 +162,6 @@ export default function EstadisticasUser() {
     if (desde) params.append('desde', desde);
     if (hasta) params.append('hasta', hasta);
     if (filtros.vendedor) params.append('vendedor', filtros.vendedor);
-    if (filtros.referencia) params.append('referencia', filtros.referencia);
 
     try {
       const res = await fetch(`${endpoint}?${params.toString()}`);
@@ -160,7 +203,6 @@ export default function EstadisticasUser() {
 
     generarTabla("Consultas por Zona", data.porZona);
     generarTabla("Consultas por Vendedor", data.porVendedor);
-    generarTabla("Referencias", data.porReferencia);
     if (data.porMes) generarTabla("Consultas por Mes", data.porMes);
 
     doc.save("estadisticas_spalla.pdf");
@@ -182,49 +224,64 @@ export default function EstadisticasUser() {
             <option value="">Todos los vendedores</option>
             {metadata.vendedores.map((v, i) => <option key={i} value={v}>{v}</option>)}
           </select>
-          <select onChange={(e) => setFiltros({ ...filtros, referencia: e.target.value })} value={filtros.referencia}>
-            <option value="">Todas las referencias</option>
-            {metadata.referencias.map((r, i) => <option key={i} value={r}>{r}</option>)}
-          </select>
-          <button onClick={() => setFiltros({ rango: "todos", vendedor: "", referencia: "" })}>Limpiar</button>
+          <button onClick={() => setFiltros({ rango: "todos", vendedor: "" })}>Limpiar</button>
           <button onClick={exportarPDF}>Exportar PDF</button>
         </div>
 
         {data ? (
           <div className="tabs-container">
             <div className="tabs">
-              <button onClick={() => setTab("zona")} className={tab === "zona" ? "show" : ""}>📊 Zona</button>
+              <button onClick={() => setTab("zona")} className={tab === "zona" ? "show" : ""}>📊 Historicos</button>
               <button onClick={() => setTab("vendedor")} className={tab === "vendedor" ? "show" : ""}>📈 Vendedor</button>
               <button onClick={() => setTab("mes")} className={tab === "mes" ? "show" : ""}>📅 Por Mes</button>
               <button onClick={() => setTab("referencias")} className={tab === "referencias" ? "show" : ""}>📌 Referencias</button>
             </div>
+
             <div className={`tab-content ${tab === "zona" ? "show" : ""}`}>
-  <div className="grafico-box"><canvas id="zonaChart" height="200"></canvas></div>
-</div>
+              <div className="grafico-box"><canvas id="zonaChart" height="200"></canvas></div>
+            </div>
 
-<div className={`tab-content ${tab === "vendedor" ? "show" : ""}`}>
-  <div className="grafico-box"><canvas id="vendedorChart" height="200"></canvas></div>
-</div>
+            <div className={`tab-content ${tab === "vendedor" ? "show" : ""}`}>
+              <div className="grafico-box"><canvas id="vendedorChart" height="200"></canvas></div>
+            </div>
 
-<div className={`tab-content ${tab === "mes" ? "show" : ""}`}>
-  <div className="grafico-box"><canvas id="mensualChart" height="200"></canvas></div>
-</div>
+            <div className={`tab-content ${tab === "mes" ? "show" : ""}`}>
+              <div className="grafico-box"><canvas id="mensualChart" height="200"></canvas></div>
+            </div>
 
-<div className={`tab-content ${tab === "referencias" ? "show" : ""}`}>
-  <div className="grafico-box referencias">
-    <h3>📌 Últimas Referencias</h3>
-    <ul id="referenciasList">
-      {Object.entries(data.porReferencia).slice(0, 10).map(([ref, count]) => (
-        <li key={ref}>{ref} — {count} consulta{count > 1 ? 's' : ''}</li>
-      ))}
-    </ul>
-  </div>
-
-
-              )
+            <div className={`tab-content ${tab === "referencias" ? "show" : ""}`}>
+              <div className="grafico-box referencias">
+                <h3 style={{ padding: "10px", color: "#111", fontSize: "20px" }}>📌 Últimos 10 Registros</h3>
+                {data.ultimos?.length > 0 ? (
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                    <thead>
+                      <tr style={{ backgroundColor: "#f5f5f5", textAlign: "left" }}>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #111", color: "#111", fontSize: "14px" }}>Referencia</th>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #111", color: "#111", fontSize: "14px" }}>Zona</th>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #111", color: "#111", fontSize: "14px" }}>Vendedor</th>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #111", color: "#111", fontSize: "14px" }}>Fecha</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.ultimos.map((item, i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid #666" }}>
+                          <td style={{ padding: "10px", color: "#666", fontSize: "12px" }}><strong>{item.referencia}</strong></td>
+                          <td style={{ padding: "10px", color: "#666", fontSize: "12px" }}>{item.zona}</td>
+                          <td style={{ padding: "10px", color: "#666", fontSize: "12px" }}>{item.vendedor}</td>
+                          <td style={{ padding: "10px", color: "#666", fontSize: "12px" }}>{new Date(item.fecha).toLocaleString("es-AR")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p>No hay registros recientes.</p>
+                )}
+              </div>
             </div>
           </div>
-        ) : <div>⚠️ Error o sin datos.</div>}
+        ) : (
+          <div>Por favor espere mientras EiryBot carga la informacion.</div>
+        )}
       </div>
     </>
   );
