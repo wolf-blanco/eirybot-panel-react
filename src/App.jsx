@@ -2,7 +2,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/dashboard";
 import Cuenta from "./pages/cuenta";
-import Configuracion from "./pages/configuracion";
+import Configuracion from "./pages/Configuracion";
 import Facturacion from "./pages/facturacion";
 import EstadisticasUser from './pages/estadisticas_user';
 import Chart from "chart.js/auto";
